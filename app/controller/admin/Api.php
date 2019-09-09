@@ -9,6 +9,12 @@ use think\facade\Db;
 
 class Api extends BaseController
 {
+    public function bing()
+    {
+        $bing = curl('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1');
+        $img = 'https://cn.bing.com' . json_decode($bing, true)['images'][0]['url'];
+        return redirect($img);
+    }
     protected function count(){
         $data['newsCount'] = Db::table('cms_content_news')->count();
         $data['newsTime'] = date('Y-m-d H:i:s');
@@ -19,8 +25,9 @@ class Api extends BaseController
 
     protected function notice()
     {
-        curl();
-
+        $notice = curl('https://forum.mengniang.tv/api/v1/notice');
+        $notice = json_decode($notice, true);
+        return $notice['data'];
     }
     public function dashboard()
     {
@@ -40,7 +47,7 @@ class Api extends BaseController
             'host' => $_SERVER["HTTP_HOST"],
             'sapi_name' => php_sapi_name(),
 //            'curl' => function_exists('curl_init') ? "是" : "否",
-            'cpu' => $_SERVER['PROCESSOR_IDENTIFIER'],
+            'cpu' => isset($_SERVER['PROCESSOR_IDENTIFIER']) ? $_SERVER['PROCESSOR_IDENTIFIER'] : '没有权限获取',
             'disk_free_space' => round((disk_free_space(".") / (1024 * 1024 * 1024)),2) . 'G',
             'disk_total_space' => round((disk_total_space(".") / (1024 * 1024 * 1024)),2) . 'G',
             'disk' => 100 - round(disk_free_space(".") /disk_total_space(".") * 100,0) ,
@@ -53,7 +60,8 @@ class Api extends BaseController
             ->order('l.id', 'desc')
             ->limit(4)
             ->select();
-        $data = compact('dashboard', 'count', 'admin_log');
+        $notice = $this->notice();
+        $data = compact('dashboard', 'count', 'admin_log', 'notice');
         return success($data);
     }
 

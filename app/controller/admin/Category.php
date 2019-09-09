@@ -89,6 +89,12 @@ class Category extends BaseController
             unset($request['slug']);
             $request['parent_id'] = 0;
         }
+
+        if ($request['id'] == 25)
+        {
+            unset($request['slug']);
+            $request['parent_id'] = 0;
+        }
         foreach ($request as $k => $v)
         {
             if ($v == 'null')
@@ -110,8 +116,21 @@ class Category extends BaseController
         if (isset($request['id']) && $request['id'] > 0) {
             $id = $request['id'];
             unset($request['id']);
+            $count = $categoryModel
+                ->where('name', $request['name'])
+                ->where('id', '<>', $id)
+                ->count();
+            if ($count > 0)
+            {
+                return error('标题已存在，请修改');
+            }
             $rs = $categoryModel->where('id', $id)->save($request);
         }else{
+            $count = $categoryModel->where('name', $request['name'])->count();
+            if ($count > 0)
+            {
+                return error('标题已存在，请修改');
+            }
             $rs = $categoryModel->save($request);
         }
         userLog(session('user_id'), '编辑栏目：' . $request['name'], $rs, 'category');

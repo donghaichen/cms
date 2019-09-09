@@ -49,5 +49,6 @@ return [
 
     // geetest 验证
     'captcha_id' => Env::get('app.captcha_id', ''),
+
     'private_key' => Env::get('app.private_key', ''),
 ];

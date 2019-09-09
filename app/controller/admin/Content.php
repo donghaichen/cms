@@ -56,9 +56,24 @@ class Content extends BaseController
         if (isset($request['id']) && $request['id'] > 0) {
             $id = $request['id'];
             unset($request['id']);
+            $count = Db::table($this->table($content_type))
+                ->where('title', $request['title'])
+                ->where('id', '<>', $id)
+                ->count();
+            if ($count > 0)
+            {
+                return error('标题已存在，请修改');
+            }
             $rs = Db::table($this->table($content_type))->where('id', $id)->save($request);
         }else{
             unset($request['id']);
+            $count = Db::table($this->table($content_type))
+                ->where('title', $request['title'])
+                ->count();
+            if ($count > 0)
+            {
+                return error('标题已存在，请修改');
+            }
             $rs = Db::table($this->table($content_type))->save($request);
         }
         userLog(session('user_id'), '编辑页面：' .$request['title'] , $rs, $this->table($content_type));
@@ -73,6 +88,10 @@ class Content extends BaseController
     public function deletePage(Request $request)
     {
         $id = $request->param()['id'];
+        if ($id == 1)
+        {
+            return error('该页面为系统核心数据，不能删除');
+        }
         $type = 'page';
         $model = Db::table($this->table($type));
         if ($model->where('parent_id', $id)->count() > 0)
@@ -102,7 +121,7 @@ class Content extends BaseController
      */
     protected function getPageNolevel($parent_id = 0, $level = 0, $current_id = '', &$page_nolevel = array(), $mark = '----')
     {
-        $data = Db::table($this->table('page'))->order(['id'])->select()->toArray();
+        $data = Db::table($this->table('page'))->order(['sort','id'])->select()->toArray();
         foreach ((array) $data as $value) {
             if ($value['parent_id'] == $parent_id && $value['id'] != $current_id) {
                 $value['mark'] = str_repeat($mark, $level);
@@ -141,6 +160,11 @@ class Content extends BaseController
             $title = $request['title'];
             $where[] = ['a.title', 'like', "%$title%"];
         }
+        if (isset($request['is_recommend']) && !empty($request['is_recommend']) && in_array($request['is_recommend'], [0, 1]))
+        {
+            $is_recommend = $request['is_recommend'];
+            $where[] = ['a.is_recommend', '=', $is_recommend];
+        }
         if (isset($request['status']) && !empty($request['status']))
         {
             $status = $request['status'];
@@ -149,7 +173,7 @@ class Content extends BaseController
 
         $status_cn = ['draft' => '草稿', 'pending' => '等待复审', 'publish' => '已发布'];
         $model = Db::table($this->table($type));
-        $per_page = input('get.per_page') > 0 ? input('get.type') : $this->pageSize;
+        $per_page = input('get.per_page') > 0 ? input('get.per_page') : $this->pageSize;
         $data = $model
             ->field('a.*, c.name as category_name')
             ->alias('a')
@@ -157,6 +181,8 @@ class Content extends BaseController
             ->where($where)
             ->order('id','desc')
             ->paginate($per_page)->toArray();
+        $sql = $model->getLastSql();
+        $data['sql'] = $sql;
         foreach ($data['data'] as $k => $v)
         {
             $data['data'][$k]['status_cn'] =  $status_cn[$v['status']];
@@ -188,6 +214,34 @@ class Content extends BaseController
         }
     }
 
+    /*
+  * 删除内容
+  */
+    public function contentRecommend()
+    {
+        $request = \request()->param();
+        $type = $request['type'];
+        $recommend = $request['recommend'];
+        $model = Db::table($this->table($type));
+        if (strpos($request['id'], ',') !== false)
+        {
+            $id = explode(',', $request['id']);
+        }else{
+            $id = $request['id'];
+        }
+        $rs = $model->where('id','in', $id)
+            ->data(['is_recommend' => $recommend])
+            ->update();
+        $info = $recommend == 1 ? '推荐内容' : '取消推荐内容';
+        userLog(session('user_id'), $info . $request['id'] , $rs, $this->table($type));
+        if ($rs)
+        {
+            return success();
+        }else{
+            return error('推荐失败，数据无更新');
+        }
+    }
+
     protected function parent($parent_id = 0)
     {
         $categoryModel = new CategoryModel();
@@ -207,6 +261,14 @@ class Content extends BaseController
     public function contentView($type, $id)
     {
         $rs = Db::table($this->table($type))->where('id', $id)->find();
+        if (isset($rs['is_offer']))
+        {
+            $rs['is_offer'] = $rs['is_offer'] == 1 ? true : false;
+        }
+        if (isset($rs['is_recommend']))
+        {
+            $rs['is_recommend'] = $rs['is_recommend'] == 1 ? true : false;
+        }
         if ($rs['category_id'] > 6)
         {
             $rs['category_id'] = $this->parent($rs['category_id']);
@@ -220,10 +282,18 @@ class Content extends BaseController
     {
 
         $request = \request()->param();
+        foreach ($request as $k => $v)
+        {
+            if (in_array($v, ['true', 'false']))
+            {
+                $request[$k] = $v == 'true' ? 1 : 0;
+            }
+        }
         unset($request['created_at']);
         unset($request['updated_at']);
         unset($request['published_at']);
         unset($request['type']);
+
         if (isset($request['src']) && empty($request['src']))
         {
             return error('附件地址不能为空');
@@ -251,8 +321,21 @@ class Content extends BaseController
 
         if ($id > 0) {
             $id = $request['id'];
+            $count = Db::table($this->table($type))
+                ->where('title', $request['title'])
+                ->where('id', '<>', $id)
+                ->count();
+            if ($count > 0)
+            {
+                return error('标题已存在，请修改');
+            }
             $rs = Db::table($this->table($type))->where('id', $id)->save($request);
         }else{
+            $count = Db::table($this->table($type))->where('title', $request['title'])->count();
+            if ($count > 0)
+            {
+                return error('标题已存在，请修改');
+            }
             $rs = Db::table($this->table($type))->insert($request);
         }
         userLog(session('user_id'), "编辑内容：$type ：" . $request['title'] , $rs, $this->table($type));

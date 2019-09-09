@@ -2,16 +2,107 @@
 namespace app\controller;
 
 use app\BaseController;
+use app\model\Ad as AdModel;
+use think\facade\Db;
+use think\facade\Log;
 
 class Index extends BaseController
 {
     public function index()
     {
-        return '<style type="text/css">*{ padding: 0; margin: 0; } div{ padding: 4px 48px;} a{color:#2E5CD5;cursor: pointer;text-decoration: none} a:hover{text-decoration:underline; } body{ background: #fff; font-family: "Century Gothic","Microsoft yahei"; color: #333;font-size:18px;} h1{ font-size: 100px; font-weight: normal; margin-bottom: 12px; } p{ line-height: 1.6em; font-size: 42px }</style><div style="padding: 24px 48px;"> <h1>:) </h1><p> ThinkPHP V6<br/><span style="font-size:30px">13载初心不改 - 你值得信赖的PHP框架</span></p></div><script type="text/javascript" src="https://tajs.qq.com/stats?sId=64890268" charset="UTF-8"></script><script type="text/javascript" src="https://e.topthink.com/Public/static/client.js"></script><think id="eab4b9f840753f8e7"></think>';
+
+        $rs = Db::table('shiqiloucms_archive')
+            ->where('catid', 2)
+            ->order('aid', 'asc')
+            ->find();
+//        foreach ($rs as $k => $v)
+//        {
+//
+//
+//            $product[$k]['category_id'] = 1;
+//            $rs = Db::table('cms_content_news')
+//                ->where('title', $v['title'])->count();
+//            if ($rs > 0)
+//            {
+//                $product[$k]['title'] = $v['title'] .  $k;
+//            }else{
+//                $product[$k]['title'] = $v['title'] .  $k;
+//            }
+//            $product[$k]['content'] = str_replace('http://www.luckfire.com', '', $v['content']);
+//            $product[$k]['created_at'] = $v['adddate'];
+////            $product[$k]['image'] = '/' . $v['thumb'];
+////            $product[$k]['price'] = $v['attr2'];
+//            $product[$k]['click_count'] = rand(100,99999);
+////            $product[$k]['attribute'] = '[{"name":"规格","value":""},{"name":"材质","value":""},{"name":"产地","value":""}]';
+//        }
+////        var_dump($product);
+////        exit();
+//        foreach ($product as $k => $v)
+//        {
+//
+////            if ($v['price'] == null)
+////            {
+////                $product[$k]['price'] = 0.00;
+////            }
+////            $product[$k]['album'] = json_encode($v['album']);
+//        }
+//
+//        $rs = Db::table('cms_content_news')
+//           ->insertAll($product);
+//        var_dump($rs);
+//        exit();
+        $product = Db::table('cms_content_product')
+            ->where('is_recommend', 1)
+            ->order('id', 'desc')
+            ->limit(8)
+            ->select()->toArray();
+        foreach ($product as $k => $v)
+        {
+            $product[$k]['price'] = round($v['price']);
+            $product[$k]['image'] = imgUrl($v['image']);
+            $product[$k]['price'] = $v['price'] == 0 ? '暂无报价' : $v['price'];
+        }
+        $about = Db::table('cms_content_page')
+            ->where('id', 1)
+            ->find();
+        $about['content'] = subString($about['content'], 500);
+
+        $news =  Db::table('cms_content_news')
+            ->where('is_recommend', 1)
+            ->order('id', 'desc')
+            ->limit(6)
+            ->select()->toArray();
+        foreach ($news as $k => $v)
+        {
+            $news[$k]['content'] = subString($v['content'], 200);
+            $news[$k]['image'] = imgUrl($v['image']);
+        }
+
+        $video =  Db::table('cms_content_video')
+            ->where('is_recommend', 1)
+            ->order('id', 'desc')
+            ->limit(8)
+            ->select()->toArray();
+        foreach ($video as $k => $v)
+        {
+            $video[$k]['content'] = subString($v['content'], 200);
+            $video[$k]['image'] = imgUrl($v['image']);
+        }
+        $data = compact('product', 'about', 'news', 'video');
+        return view('index', $data);
     }
 
     public function hello($name = 'ThinkPHP6')
     {
         return 'hello,' . $name;
+    }
+
+    public function msg()
+    {
+        $request = request()->param();
+        $request['created_ip'] = getIp();
+        $data = Db::table('cms_content_msg')
+            ->save($request);
+        return success($data);
     }
 }

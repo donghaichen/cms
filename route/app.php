@@ -10,10 +10,28 @@
 // +----------------------------------------------------------------------
 use think\facade\Route;
 
+//前台
+Route::post('/test', 'web.Index/Index');
+Route::post('/msg', 'Index/msg');
 
-// 必须是JSON请求访问
+// 注册路由到News控制器的read操作
+Route::rule('product/view/:id','Product/view');
+Route::rule('product/:category_id','Product/List');
+Route::rule('news/view/:id','News/view');
+Route::rule('news/:category_id','News/List');
+Route::rule('case/view/:id','Cases/view');
+Route::rule('case/:category_id','Cases/List');
+Route::rule('video/view/:id','Video/view');
+Route::rule('video/:category_id','Video/List');
+Route::rule('page/:id','Page/view');
+
+// 后台
 Route::post('admin/v1/login', 'admin.User/login');
 Route::get('admin/v1/geetest', 'admin.Common/geetest');
+Route::get('admin/v1/bing', 'admin.Api/bing');
+Route::get('admin/v1/log/getRunData', 'admin.Log/getRunData');
+Route::get('admin/v1/common/msg/:id', 'admin.Common/msgView');
+Route::get('admin/v1/common/msg', 'admin.Common/msg');
 Route::get('admin/v1/common/localConfig', 'admin.Common/localConfig');
 Route::get('admin/v1/common/config', 'admin.Common/config');
 Route::post('admin/v1/common/upload', 'admin.Common/upload');
@@ -38,7 +56,15 @@ Route::get('admin/v1/content/list/:type', 'admin.Content/list')->pattern(['type'
 Route::get('admin/v1/content/view/:type/:id', 'admin.Content/contentView')->pattern(['type' => '\w+']);
 Route::post('admin/v1/content/save/:type/:id', 'admin.Content/contentSave')->pattern(['type' => '\w+']);
 Route::post('admin/v1/content/contentDelete', 'admin.Content/contentDelete');
+Route::post('admin/v1/content/contentRecommend', 'admin.Content/contentRecommend');
 Route::get('admin/v1/content/page/:id', 'admin.Content/pageView');
 Route::post('admin/v1/content/page', 'admin.Content/pageSave');
 Route::delete('admin/v1/content/page/:id', 'admin.Content/deletePage');
 Route::get('admin/v1/content/page', 'admin.Content/pageList');
+
+
+// m
+Route::get('m/v1/home', 'm.Api/home');
+Route::get('m/v1/news', 'm.Api/news');
+Route::get('m/v1/product', 'm.Api/product');
+Route::get('m/v1/view', 'm.Api/view');

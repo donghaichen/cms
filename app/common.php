@@ -1,5 +1,7 @@
 <?php
 
+use app\model\Ad as AdModel;
+use app\model\Category as CategoryModel;
 use app\model\Log;
 use app\model\Setting;
 use think\facade\Db;
@@ -118,9 +120,8 @@ function userLog($user_id, $info = '', $response= [], $table = '')
 //记录系统数据
 function databaseLog($table = '', $type = 'sql', $time = '0.0001')
 {
-    $content = Db::table($table)->getLastSql();
-    Db::table('cms_sys_log')->save(compact('content', 'type', 'time'));
-
+//    $content = Db::table($table)->getLastSql();
+//    Db::table('cms_sys_log')->save(compact('content', 'type', 'time'));
 }
 
 /**
@@ -197,4 +198,138 @@ if(! function_exists('curl')){
         curl_close($curl);
         return $output;
     }
+}
+
+function view($path = 'index', $data)
+{
+    if (isMobile())
+    {
+        return redirect('/m/');
+    }
+    $data = $data;
+    $config = config();
+    $settingArr = Setting::select()->toArray();
+    foreach ($settingArr as $k => $v)
+    {
+        $setting[$v['name']] = $v['value'];
+    }
+    $ads = AdModel::where('type', 'in', ['banner', 'link'])
+        ->where('status', 1)
+        ->order('sort','asc')
+        ->order('id','desc')
+        ->select()->toArray();
+
+    $nav = [
+        getPageList(1),
+        getCategoryList(1),
+        getCategoryList(2),
+        getPageList(16),
+        Db::table('cms_content_page')
+            ->where('parent_id', '0')
+            ->where('id','>', '1')
+            ->where('id','<>', '16')
+            ->select()->toArray()
+    ];
+    include \think\facade\App::getBasePath() .'/view/' . $path . '.php';
+}
+
+function load($path = 'index')
+{
+    include \think\facade\App::getBasePath() .'/view/' . $path . '.php';
+}
+
+
+function subString($text, $length)
+{
+    $text = strip_tags($text);
+    $text = trim($text);
+//    $text = preg_replace("/^[\s\v".chr(227).chr(128)."]+/","", $text); //替换开头空字符
+//    $text = preg_replace("/[\s\v".chr(227).chr(128)."]+$/","", $text); //替换结尾空字符
+
+    if(mb_strlen($text, 'utf8') > $length) {
+        return mb_substr($text, 0, $length, 'utf8').'...';
+    } else {
+        return $text;
+    }
+
+}
+
+/*
+ * 对图片地址统一管理
+ */
+function imgUrl($img = '')
+{
+    if (empty($img))
+    {
+        $img = '/static/images/nopic.jpg';
+    }
+    return $img;
+}
+
+/**
+ * +----------------------------------------------------------
+ * 获取栏目
+ * +----------------------------------------------------------
+ * $parent_id 默认获取一级导航
+ * $level 无限极分类层次
+ * $mark 无限极分类标记
+ * +----------------------------------------------------------
+ */
+function getCategoryList($parent_id = 0, $level = 0, &$nav = [], $mark = ' - - ')
+{
+    $categoryModel = new CategoryModel();
+    $data = $categoryModel->order(['sort','id'])->select()->toArray();
+    foreach ($data as $value) {
+        if ($value['parent_id'] == $parent_id) {
+            $value['mark'] = str_repeat($mark, $level);
+//            $value['name'] = str_repeat($mark, $level) . $value['name'];
+            $nav[] = $value;
+            getCategoryList($value['id'], $level + 1, $nav);
+        }
+    }
+    return $nav;
+}
+
+
+/**
+ * +----------------------------------------------------------
+ * 获取栏目
+ * +----------------------------------------------------------
+ * $parent_id 默认获取一级导航
+ * $level 无限极分类层次
+ * $mark 无限极分类标记
+ * +----------------------------------------------------------
+ */
+function getPageList($parent_id = 0, $level = 0, &$nav = [], $mark = ' - - ')
+{
+    $categoryModel =  Db::table('cms_content_page');
+    $data = $categoryModel
+        ->field('*, title as name')
+        ->order(['sort','id'])
+        ->select()->toArray();
+    foreach ($data as $value) {
+        if ($value['parent_id'] == $parent_id) {
+            $value['mark'] = str_repeat($mark, $level);
+            $nav[] = $value;
+            getPageList($value['id'], $level + 1, $nav);
+        }
+    }
+    return $nav;
+}
+
+
+function clickCount($table = 'content_product', $id = 0)
+{
+    Db::table($table)->where('id', $id)->inc('click_count', 1)->update();
+}
+
+function isMobile()
+{
+    // These lines are mandatory.
+    require_once \think\facade\App::getBasePath() .'/mobileDetect.php';
+    $detect = new Mobile_Detect;
+    if ($detect->isMobile()) {
+        return true;
+    }
+    return false;
 }

@@ -31,6 +31,10 @@ class User extends BaseController
         $request = $request->param();
         $username = $request['username'];
         $password = $request['password'];
+        if (empty($username) || empty($password))
+        {
+            return error('用户名密码不能为空');
+        }
         $user = UserModel::where('username', $username)
             ->where('is_admin', 1)
             ->where('status', 1)
@@ -72,7 +76,7 @@ class User extends BaseController
 
     public function index()
     {
-        $per_page = input('get.per_page') > 0 ? input('get.type') : $this->pageSize;
+        $per_page = input('get.per_page') > 0 ? input('get.per_page') : $this->pageSize;
         $data = UserModel::where('is_admin','<>',1)
             ->order('id','desc')
             ->paginate($per_page);
@@ -81,7 +85,7 @@ class User extends BaseController
 
     public function adminList()
     {
-        $per_page = input('get.per_page') > 0 ? input('get.type') : $this->pageSize;
+        $per_page = input('get.per_page') > 0 ? input('get.per_page') : $this->pageSize;
         $data = UserModel::where('is_admin',1)
             ->order('id','desc')
             ->paginate($per_page);
@@ -179,6 +183,12 @@ class User extends BaseController
                         'name' =>  'adminUser',
                         'text' =>  '后台用户'
                     ],
+                    [
+                        'path' =>  'msg', // icon类型
+                        'type' =>  'ios-people',
+                        'name' =>  'msg',
+                        'text' =>  '留言管理'
+                    ],
 //                    [
 //                        'path' =>  'adminRole', // icon类型
 //                        'type' =>  'ios-contact',
@@ -255,30 +265,30 @@ class User extends BaseController
                         'path' =>  'product',
                         'text' =>  '产品管理'
                     ],
-                    [
-                        'type' =>  'ios-videocam',
-                        'name' =>  'video',
-                        'path' =>  'video',
-                        'text' =>  '视频管理'
-                    ],
-                    [
-                        'type' =>  'ios-download',
-                        'name' =>  'download',
-                        'path' =>  'download',
-                        'text' =>  '下载管理'
-                    ],
-                    [
-                        'type' =>  'ios-easel',
-                        'name' =>  'case',
-                        'path' =>  'case',
-                        'text' =>  '案例管理'
-                    ],
-                    [
-                        'type' =>  'ios-contacts',
-                        'name' =>  'job',
-                        'path' =>  'job',
-                        'text' =>  '招聘管理'
-                    ]
+//                    [
+//                        'type' =>  'ios-videocam',
+//                        'name' =>  'video',
+//                        'path' =>  'video',
+//                        'text' =>  '视频管理'
+//                    ],
+//                    [
+//                        'type' =>  'ios-download',
+//                        'name' =>  'download',
+//                        'path' =>  'download',
+//                        'text' =>  '下载管理'
+//                    ],
+//                    [
+//                        'type' =>  'ios-easel',
+//                        'name' =>  'case',
+//                        'path' =>  'case',
+//                        'text' =>  '案例管理'
+//                    ],
+//                    [
+//                        'type' =>  'ios-contacts',
+//                        'name' =>  'job',
+//                        'path' =>  'job',
+//                        'text' =>  '招聘管理'
+//                    ]
                 ]
             ],
             [

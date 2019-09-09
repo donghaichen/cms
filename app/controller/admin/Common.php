@@ -11,10 +11,10 @@ use think\exception\ValidateException;
 use think\facade\Config;
 use think\facade\Db;
 use think\facade\Filesystem;
+use think\Request;
 
 class Common extends BaseController
 {
-
     public function geetest()
     {
         $config = Config::get('app');
@@ -93,7 +93,7 @@ class Common extends BaseController
 
     public function fileList()
     {
-        $per_page = input('get.per_page') > 0 ? input('get.type') : $this->pageSize;
+        $per_page = input('get.per_page') > 0 ? input('get.per_page') : $this->pageSize;
         $data = Db::table('cms_file')
             ->order('id', 'desc')
             ->paginate($per_page);
@@ -137,6 +137,22 @@ class Common extends BaseController
             }
             $data[$name] = $value;
         }
+        return success($data);
+    }
+
+    public function msg()
+    {
+        $per_page = input('get.per_page') > 0 ? input('get.per_page') : $this->pageSize;
+        $data = Db::table('cms_content_msg')
+            ->order('id', 'desc')
+            ->paginate($per_page);
+        return success($data);
+    }
+
+    public function msgView(Request $request)
+    {
+        $id = $request->param('id');
+        $data = Db::table('cms_content_msg')->where('id',$id)->find();
         return success($data);
     }
 
